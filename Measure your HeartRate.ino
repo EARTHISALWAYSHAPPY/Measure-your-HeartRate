@@ -11,7 +11,7 @@ const byte RATE_SIZE = 4;
 byte rates[RATE_SIZE];
 byte rateSpot = 0;
 long lastBeat = 0;
-float beatsPerMinute;
+int beatsPerMinute;
 int beatAvg;
 
 #define SCREEN_WIDTH 128
@@ -19,14 +19,6 @@ int beatAvg;
 #define OLED_RESET    -1
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
-unsigned long timestart = 0;
-static const unsigned char PROGMEM heartsmall[] =
-{ 0x03, 0xC0, 0xF0, 0x06, 0x71, 0x8C, 0x0C, 0x1B, 0x06, 0x18, 0x0E, 0x02, 0x10, 0x0C, 0x03, 0x10,
-  0x04, 0x01, 0x10, 0x04, 0x01, 0x10, 0x40, 0x01, 0x10, 0x40, 0x01, 0x10, 0xC0, 0x03, 0x08, 0x88,
-  0x02, 0x08, 0xB8, 0x04, 0xFF, 0x37, 0x08, 0x01, 0x30, 0x18, 0x01, 0x90, 0x30, 0x00, 0xC0, 0x60,
-  0x00, 0x60, 0xC0, 0x00, 0x31, 0x80, 0x00, 0x1B, 0x00, 0x00, 0x0E, 0x00, 0x00, 0x04, 0x00,
-};
 
 static const unsigned char PROGMEM heartbig[] =
 { 0x01, 0xF0, 0x0F, 0x80, 0x06, 0x1C, 0x38, 0x60, 0x18, 0x06, 0x60, 0x18, 0x10, 0x01, 0x80, 0x08,
@@ -38,9 +30,6 @@ static const unsigned char PROGMEM heartbig[] =
   0x01, 0x80, 0x01, 0x80, 0x00, 0xC0, 0x03, 0x00, 0x00, 0x60, 0x06, 0x00, 0x00, 0x30, 0x0C, 0x00,
   0x00, 0x08, 0x10, 0x00, 0x00, 0x06, 0x60, 0x00, 0x00, 0x03, 0xC0, 0x00, 0x00, 0x01, 0x80, 0x00
 };
-
-int a, b, c, d, e;
-int BPM;
 
 void setup() {
 
@@ -68,16 +57,15 @@ void setup() {
 
 void loop() {
   bpm();
-  checkbpm();
 }
 
 void bpm()
 {
+  //BPM = beatsPerMinute
+  //Avg BPM = beatAvg
   long irValue = particleSensor.getIR();
-
   if (irValue > 50000)
   {
-
     if (checkForBeat(irValue) == true)
     {
       long delta = millis() - lastBeat;
@@ -92,125 +80,36 @@ void bpm()
         for (byte x = 0 ; x < RATE_SIZE ; x++)
           beatAvg += rates[x];
         beatAvg /= RATE_SIZE;
+        display.clearDisplay();
+        display.setTextSize(2);
+        display.setTextColor(WHITE);
+        display.setCursor(12, 5);
+        display.print("BPM : ");
+
+        display.setCursor(82, 5);
+        display.print(beatsPerMinute);
+
+        display.setTextSize(2);
+        display.setTextColor(WHITE);
+        display.setCursor(12, 25);
+        display.print("Avg BPM :");
+
+        display.setCursor(12, 45);
+        display.print(beatAvg);
+        display.display();
+
       }
     }
   }
-  else { }
-}
+  else if (irValue < 50000 || beatsPerMinute == 0 || beatAvg == 0) {
 
-void checkbpm()
-{
-  long irValue = particleSensor.getIR();
-  unsigned long currentmillis = millis() / 1000;
-  if (currentmillis - timestart >= 1 ) {
-    timestart = millis() / 1000;
-    if (irValue < 50000) {
-      currentmillis = 0;
-      timestart = 0;
-      Serial.println("reset");
+    display.clearDisplay();
+    display.drawBitmap(45, 10, heartbig, 32, 32, 1);
+    display.setTextSize(1);
+    display.setTextColor(WHITE);
+    display.setCursor(16, 50);
+    display.print("Please waiting...");
+    display.display();
 
-      display.clearDisplay();
-      display.drawBitmap(45, 10, heartbig, 32, 32, 1);
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.setCursor(16, 50);
-      display.println("Please waiting...");
-      display.display();
-
-    }
-  }
-  switch (timestart)
-  {
-    case 15:
-      a =  beatAvg;
-
-      Serial.println(a);
-
-      display.clearDisplay();
-      display.drawBitmap(45, 10, heartbig, 32, 32, 1);
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.setCursor(16, 50);
-      display.println("Please waiting...");
-      display.display();
-
-      break;
-
-    case 20:
-      b = beatAvg;
-
-      Serial.println(b);
-
-      display.clearDisplay();
-      display.drawBitmap(50, 15, heartsmall, 24, 21, 1);
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.setCursor(16, 50);
-      display.println("Please waiting...");
-      display.display();
-
-      break;
-
-    case 25:
-      c = beatAvg;
-
-      Serial.println(c);
-
-      display.clearDisplay();
-      display.drawBitmap(45, 10, heartbig, 32, 32, 1);
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.setCursor(16, 50);
-      display.println("Please waiting...");
-      display.display();
-
-      break;
-
-    case 30:
-      d = beatAvg;
-
-      Serial.println(d);
-
-      display.clearDisplay();
-      display.drawBitmap(50, 15, heartsmall, 24, 21, 1);
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.setCursor(16, 50);
-      display.println("Please waiting...");
-      display.display();
-
-      break;
-
-    case 35:
-      e = beatAvg;
-
-      Serial.println(e);
-
-      display.clearDisplay();
-      display.drawBitmap(45, 10, heartbig, 32, 32, 1);
-      display.setTextSize(1);
-      display.setTextColor(WHITE);
-      display.setCursor(16, 50);
-      display.println("Please waiting...");
-      display.display();
-
-      break;
-
-    case 37:
-      int sum = (a + b + c + d + e) / 5;
-      Serial.println(sum);
-      Serial.println("done....");
-
-      display.clearDisplay();
-      display.setTextSize(2);
-      display.setTextColor(WHITE);
-      display.setCursor(18, 25);
-      display.println("BPM :");
-      display.setCursor(86, 25);
-      display.println(sum);
-      display.display();
-      delay(10000);
-
-      break;
   }
 }
